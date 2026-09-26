@@ -1,0 +1,47 @@
+name: Extract SkyLinkVPN Source
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract source ZIP
+        run: |
+          rm -rf _source
+          mkdir -p _source
+
+          unzip -q SkyLinkVPN-source.zip -d _source
+
+          SOURCE_DIR="_source/v2rayNG-master"
+
+          if [ ! -d "$SOURCE_DIR" ]; then
+            echo "ERROR: v2rayNG-master folder not found"
+            echo "ZIP structure:"
+            find _source -maxdepth 3 -print
+            exit 1
+          fi
+
+          rm -rf "$SOURCE_DIR/.git"
+          rm -rf "$SOURCE_DIR/.github/workflows"
+
+          cp -a "$SOURCE_DIR"/. .
+
+          rm -rf _source
+          rm -f SkyLinkVPN-source.zip
+
+      - name: Commit source files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Extract Android project source" || echo "No changes"
+          git push
