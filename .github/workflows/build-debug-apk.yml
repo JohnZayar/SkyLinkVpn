@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Clone hev-socks5-tunnel (native dependency)
         run: git clone --recursive --depth 1 https://github.com/heiher/hev-socks5-tunnel.git hev-socks5-tunnel
