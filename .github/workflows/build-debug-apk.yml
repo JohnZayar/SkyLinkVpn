@@ -44,8 +44,7 @@ jobs:
       - name: Accept licenses and install platform + build-tools
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --channel=3 --licenses || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --channel=3 --install "platforms;android-37" "build-tools;37.0.0"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-36" "build-tools;36.0.0"
 
       - name: Install NDK
         run: |
