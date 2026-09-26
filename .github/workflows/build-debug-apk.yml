@@ -24,20 +24,33 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Setup Android SDK
+      - name: Setup Android SDK (base)
         uses: android-actions/setup-android@v3
         with:
           log-accepted-android-sdk-licenses: false
-          packages: 'platforms;android-37 platform-tools'
+          packages: 'platform-tools'
 
-      - name: Accept all SDK licenses
-        run: yes | sdkmanager --licenses || true
+      - name: Install latest Android cmdline-tools
+        run: |
+          cd "$ANDROID_HOME"
+          curl -sSL -o cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-14742923_latest.zip
+          rm -rf cmdline-tools/latest cmdline-tools/tmp
+          mkdir -p cmdline-tools/tmp
+          unzip -q cmdline-tools.zip -d cmdline-tools/tmp
+          mv cmdline-tools/tmp/cmdline-tools cmdline-tools/latest
+          rm -rf cmdline-tools/tmp cmdline-tools.zip
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+
+      - name: Accept licenses and install platform + build-tools
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-37" "build-tools;37.0.0"
 
       - name: Install NDK
         run: |
-          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+          echo "y" | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
             --install "ndk;29.0.14206865"
-          echo "NDK_HOME=$ANDROID_HOME/ndk/29.0.14206865" >> $GITHUB_ENV
+          echo "NDK_HOME=$ANDROID_HOME/ndk/29.0.14206865" >> "$GITHUB_ENV"
 
       - name: Build native tunnel library (hev-socks5-tunnel)
         run: bash compile-hevtun.sh
