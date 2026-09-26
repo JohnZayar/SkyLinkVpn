@@ -1,0 +1,65 @@
+name: Build Debug APK (no signing needed)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Clone hev-socks5-tunnel (native dependency)
+        run: git clone --recursive --depth 1 https://github.com/heiher/hev-socks5-tunnel.git hev-socks5-tunnel
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          log-accepted-android-sdk-licenses: false
+          packages: 'platforms;android-37 build-tools;37.0.0 platform-tools'
+
+      - name: Install NDK
+        run: |
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+            --install "ndk;29.0.14206865"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/29.0.14206865" >> $GITHUB_ENV
+
+      - name: Build native tunnel library (hev-socks5-tunnel)
+        run: bash compile-hevtun.sh
+
+      - name: Copy native tunnel library into app module
+        run: cp -r ${{ github.workspace }}/libs ${{ github.workspace }}/V2rayNG/app
+
+      - name: Download prebuilt Xray-core AAR
+        uses: robinraju/release-downloader@v1.9
+        with:
+          repository: '2dust/AndroidLibXrayLite'
+          latest: true
+          fileName: 'libv2ray.aar'
+          out-file-path: V2rayNG/app/libs/
+
+      - name: Build unsigned debug APK
+        run: |
+          cd V2rayNG
+          chmod 755 gradlew
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          ./gradlew assemblePlaystoreDebug
+
+      - name: Upload APK(s) as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SkyLinkVPN-debug-apk
+          path: V2rayNG/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
